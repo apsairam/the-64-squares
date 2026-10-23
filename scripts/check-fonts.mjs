@@ -1,0 +1,12 @@
+﻿import { chromium } from 'playwright';
+const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+const logs=[]; page.on('console',m=>{if(m.type()==='error')logs.push(m.text())}); page.on('pageerror',e=>logs.push(e.message));
+const external=[]; page.on('request',r=>{const u=new URL(r.url()); if(u.hostname!=='localhost') external.push(r.url())});
+await page.goto('http://localhost:4000/', { waitUntil: 'networkidle' });
+await page.waitForTimeout(1000);
+console.log('fonts', await page.evaluate(() => ({ inter: document.fonts.check('16px Inter'), mono: document.fonts.check('16px "JetBrains Mono"'), symbols: document.fonts.check('16px "Noto Sans Symbols 2"'), status: document.fonts.status })));
+console.log('external', external);
+console.log('errors', logs);
+await page.screenshot({ path: 'shots/check-fonts-desktop.png' });
+await browser.close();

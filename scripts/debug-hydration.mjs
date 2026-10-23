@@ -1,0 +1,17 @@
+﻿import { chromium } from 'playwright';
+const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+const logs = [];
+page.on('console', m => logs.push(`${m.type()}: ${m.text()}`));
+page.on('pageerror', e => logs.push(`pageerror: ${e.message}`));
+page.on('requestfailed', r => logs.push(`failed: ${r.url()} ${r.failure()?.errorText}`));
+page.on('response', r => { if (r.url().includes('/assets/')) logs.push(`asset: ${r.status()} ${r.url()}`); });
+const response = await page.goto('http://localhost:4000/', { waitUntil: 'networkidle' });
+console.log('status', response.status());
+console.log('html desc', (await response.text()).match(/lesson__desc">([^<]+)/)?.[1]);
+await page.waitForTimeout(1500);
+console.log('dom desc', await page.locator('.lesson__desc').first().textContent());
+console.log('scripts', await page.evaluate(() => [...document.scripts].map(s => s.src)));
+console.log('content', (await page.content()).match(/lesson__desc">([^<]+)/)?.[1]);
+console.log(logs.join('\n'));
+await browser.close();

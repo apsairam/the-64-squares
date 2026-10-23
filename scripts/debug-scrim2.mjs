@@ -1,0 +1,10 @@
+﻿import { chromium } from 'playwright';
+const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+await page.goto('http://localhost:4000/', { waitUntil: 'networkidle' });
+await page.waitForTimeout(1500);
+console.log('elementAt50,200', await page.evaluate(() => { const e=document.elementFromPoint(50,200); return {tag:e?.tagName, cls:e?.className, parent:e?.parentElement?.className}; }));
+await page.evaluate(() => { const s=document.querySelector('.lesson__scrim'); s.style.background='rgba(255,0,0,0.8)'; });
+await page.waitForTimeout(200);
+await page.screenshot({ path: 'shots/debug-scrim-red.png' });
+await browser.close();

@@ -1,0 +1,10 @@
+node_modules/
+client/dist/
+client/dist-ssr/
+client/.vite/
+shots/
+.wrangler/
+.env
+.env.local
+*.log
+.DS_Store
