@@ -74,6 +74,13 @@ test('FAQ, Article and HowTo structured data is valid JSON', () => {
   assert.ok(types.includes('FAQPage'));
   assert.ok(types.includes('HowTo'));
 
+  const website = graph.find((entry) => entry['@type'] === 'WebSite');
+  const article = graph.find((entry) => entry['@type'] === 'Article');
+  assert.match(website.url, /^https?:\/\/.+\/$/);
+  assert.match(article.url, /^https?:\/\/.+\/$/);
+  assert.match(article.image, /^https?:\/\/.+\/og-image\.png$/);
+  assert.match(article.mainEntityOfPage, /^https?:\/\/.+\/$/);
+
   const faq = graph.find((entry) => entry['@type'] === 'FAQPage');
   assert.equal(faq.mainEntity.length, 5);
   assert.equal(faq.mainEntity[0]['@type'], 'Question');

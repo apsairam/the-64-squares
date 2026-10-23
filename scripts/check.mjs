@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import { chromium } from 'playwright';
+import { guidePages } from '../client/src/data/guidePages.js';
 
-const BASE = process.env.SITE_URL || 'http://localhost:4000';
+const BASE = process.env.CHECK_URL || 'http://localhost:4000';
 const results = [];
 const failures = [];
 
@@ -53,7 +54,13 @@ try {
   const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
   check('title names the site', /64 Squares/.test(title), title);
   check('description length', description?.length >= 120 && description?.length <= 160, description?.length);
-  check('canonical URL', Boolean(canonical && canonical.startsWith(BASE)), canonical);
+  let canonicalPath = '';
+  try {
+    canonicalPath = new URL(canonical).pathname;
+  } catch {
+    canonicalPath = '';
+  }
+  check('canonical URL', canonicalPath === '/', canonical);
 
   await page.locator('.tick').last().click();
   await page.waitForTimeout(1500);
@@ -115,6 +122,34 @@ try {
   await mobile.waitForTimeout(200);
   check('mobile menu opens', (await mobile.locator('.site-header__toggle').getAttribute('aria-expanded')) === 'true');
   await mobile.screenshot({ path: 'shots/check-mobile.png' });
+
+  await mobile.goto(`${BASE}/learn-chess/`, { waitUntil: 'networkidle' });
+  await mobile.waitForTimeout(300);
+  check(
+    'mobile guide has no horizontal overflow',
+    await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
+  );
+  check(
+    'mobile guide keeps a visible header',
+    await mobile.locator('.site-header').isVisible() &&
+      (await mobile.locator('h1').count()) === 1
+  );
+
+  const tocTarget = await mobile.locator('.guide-toc a').first().getAttribute('href');
+  await mobile.locator(`.guide-toc a[href="${tocTarget}"]`).click();
+  await mobile.waitForTimeout(900);
+  const tocTop = await mobile
+    .locator(tocTarget)
+    .evaluate((element) => element.getBoundingClientRect().top);
+  const guideHeaderHeight = await mobile
+    .locator('.site-header')
+    .evaluate((element) => element.getBoundingClientRect().height);
+  check(
+    'guide contents links land below the fixed header',
+    tocTop >= guideHeaderHeight - 2 && tocTop < guideHeaderHeight + 80,
+    `section top ${Math.round(tocTop)}px, header ${Math.round(guideHeaderHeight)}px`
+  );
+
   await mobileContext.close();
 
   const reducedContext = await browser.newContext({
@@ -143,6 +178,35 @@ try {
   const health = await fetch(`${BASE}/api/health`);
   const healthJson = await health.json();
   check('API health', health.ok && healthJson.ok === true, healthJson.service);
+  const guideDocs = await Promise.all(
+    guidePages.map(async (guide) => {
+      const guideResponse = await fetch(`${BASE}/${guide.slug}/`);
+      return {
+        guide,
+        ok: guideResponse.ok,
+        html: await guideResponse.text(),
+      };
+    })
+  );
+  check(
+    'all six guide pages respond 200',
+    guideDocs.every((item) => item.ok)
+  );
+  check(
+    'all six guide pages have canonical URLs',
+    guideDocs.every(({ guide, html }) =>
+      html.includes(`rel="canonical" href="`) &&
+      html.includes(`/${guide.slug}/"`)
+    )
+  );
+  check(
+    'all six guide pages have substantial article content',
+    guideDocs.every(
+      ({ html }) =>
+        (html.match(/class="guide-section"/g) ?? []).length >= 4 &&
+        html.includes('"@type":"Article"')
+    )
+  );
   const robots = await fetch(`${BASE}/robots.txt`);
   const robotsText = await robots.text();
   check('robots.txt', robots.ok && robotsText.includes('Sitemap:'));

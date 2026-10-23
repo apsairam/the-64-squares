@@ -1,3 +1,6 @@
+const siteUrl = typeof __SITE_URL__ === 'string' ? __SITE_URL__ : '';
+const absolute = (pathname) => `${siteUrl}${pathname}`;
+
 export default function StructuredData({ content }) {
   const { brand, faq, learn } = content;
 
@@ -8,11 +11,13 @@ export default function StructuredData({ content }) {
       name: brand.name,
       description: brand.tagline,
       inLanguage: 'en',
-      url: '/',
+      url: absolute('/'),
     },
     {
       '@context': 'https://schema.org',
       '@type': 'Article',
+      '@id': `${absolute('/')}#article`,
+      url: absolute('/'),
       headline: 'The 64 Squares: The Art, History & Geometry of Chess',
       description:
         'A visual chess reference with a scroll-driven Scholar’s Mate lesson, beginner rules, the corrected Immortal Game, piece anatomy, modern history and sources.',
@@ -27,8 +32,8 @@ export default function StructuredData({ content }) {
         '@type': 'Organization',
         name: brand.archive,
       },
-      image: '/og-image.png',
-      mainEntityOfPage: '/',
+      image: absolute('/og-image.png'),
+      mainEntityOfPage: absolute('/'),
       about: ['Chess', 'History of chess', 'Chess rules', 'Immortal Game'],
     },
     {

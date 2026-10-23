@@ -91,6 +91,9 @@ export default function LearnGuide({ learn }) {
         </p>
 
         <div className="learn__links">
+          <a className="text-link" href="/learn-chess/">
+            Full beginner path <span aria-hidden="true">→</span>
+          </a>
           <a className="text-link" href="#faq">
             Common questions <span aria-hidden="true">→</span>
           </a>

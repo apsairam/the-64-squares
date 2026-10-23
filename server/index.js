@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chessContent } from '../client/src/data/chessContent.js';
+import { guidePages } from '../client/src/data/guidePages.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,8 +56,16 @@ app.get('/sitemap.xml', (req, res) => {
   const lastmod = new Date().toISOString().slice(0, 10);
   res.type('application/xml');
   res.setHeader('Cache-Control', 'public, max-age=3600');
+  const origin = requestOrigin(req);
+  const guideUrls = guidePages
+    .map(
+      (page) =>
+        `  <url>\n    <loc>${origin}/${page.slug}/</loc>\n    <lastmod>${page.updated}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>${page.slug === 'learn-chess' ? '0.9' : '0.8'}</priority>\n  </url>`
+    )
+    .join('\n');
+
   res.send(
-    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>${requestOrigin(req)}/</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>1.0</priority>\n  </url>\n</urlset>\n`
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>${origin}/</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>1.0</priority>\n  </url>\n${guideUrls}\n</urlset>\n`
   );
 });
 
@@ -100,8 +109,21 @@ app.get('*', (req, res, next) => {
   // Never answer a missing file with the HTML app and a 200.
   if (path.extname(req.path)) return next();
 
-  // Only HTML navigation gets the single-page app.
+  // Only HTML navigation gets an HTML response.
   if (!req.accepts('html')) return next();
+
+  const relative = req.path.replace(/^\/+|\/+$/g, '');
+  if (relative) {
+    const routeIndex = path.resolve(distDir, relative, 'index.html');
+    const routeRoot = `${path.resolve(distDir)}${path.sep}`;
+    if (routeIndex.startsWith(routeRoot) && fs.existsSync(routeIndex)) {
+      res.setHeader('Cache-Control', 'no-cache');
+      res.sendFile(routeIndex, (error) => {
+        if (error) next(error);
+      });
+      return;
+    }
+  }
 
   if (!fs.existsSync(indexFile)) {
     res

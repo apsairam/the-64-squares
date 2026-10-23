@@ -7,11 +7,14 @@ import Piece3D from './components/Piece3D';
 import PieceGuide from './components/PieceGuide';
 import Reveal from './components/Reveal';
 import SectionHead from './components/SectionHead';
+import SiteFooter from './components/SiteFooter';
 import SiteHeader from './components/SiteHeader';
 import Sources from './components/Sources';
 import StructuredData from './components/StructuredData';
+import GuidePage from './pages/GuidePage';
 import swordsImage from './assets/swords.webp';
 import { chessContent as localContent } from './data/chessContent';
+import { getGuidePage } from './data/guidePages';
 
 function Facts({ facts }) {
   return (
@@ -230,7 +233,7 @@ function Chapter({ chapter, content, index, nextChapter }) {
   );
 }
 
-export default function App() {
+function HomePage() {
   const content = localContent;
   const [apiStatus, setApiStatus] = useState('static');
 
@@ -287,33 +290,18 @@ export default function App() {
 
           {content.challenge && <Challenge challenge={content.challenge} />}
 
-          <footer className="footer">
-            <div className="footer__inner">
-              <div className="footer__brand">
-                <span className="footer__name">{content.brand.name}</span>
-                <span className="footer__tagline">{content.brand.tagline}</span>
-              </div>
-              <nav className="footer__nav" aria-label="Footer">
-                <a href="#learn">Learn</a>
-                <a href="#chaturanga">Origins</a>
-                <a href="#immortal">Immortal Game</a>
-                <a href="#pieces">Anatomy</a>
-                <a href="#faq">FAQ</a>
-                <a href="#sources">Sources</a>
-                <a href="#challenge">Challenge</a>
-              </nav>
-              <div className="footer__meta">
-                <span>© 2026 · Archive Nº 64</span>
-                <span className={`footer__api ${apiStatus}`}>
-                  <span className="footer__dot" aria-hidden="true" />
-                  {apiStatus === 'live' ? 'API: connected' : 'Content: bundled'}
-                </span>
-              </div>
-            </div>
-          </footer>
+          <SiteFooter apiStatus={apiStatus} />
         </div>
       </main>
       <StructuredData content={content} />
     </>
   );
+}
+
+export default function App({ path = '/' }) {
+  const guide = getGuidePage(path);
+
+  if (guide) return <GuidePage page={guide} />;
+
+  return <HomePage />;
 }

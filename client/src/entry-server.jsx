@@ -2,10 +2,10 @@ import React from 'react';
 import { renderToString } from 'react-dom/server';
 import App from './App.jsx';
 
-export function render() {
+export function render(path = '/') {
   return renderToString(
     <React.StrictMode>
-      <App />
+      <App path={path} />
     </React.StrictMode>
   );
 }

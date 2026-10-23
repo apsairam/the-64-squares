@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 
 const LINKS = [
-  { href: '#learn', label: 'Learn' },
-  { href: '#chaturanga', label: 'Story' },
-  { href: '#immortal', label: 'Immortal' },
-  { href: '#pieces', label: 'Pieces' },
-  { href: '#sources', label: 'Sources' },
+  { hash: '#learn', label: 'Learn' },
+  { href: '/learn-chess/', label: 'Guides' },
+  { hash: '#chaturanga', label: 'Story' },
+  { hash: '#immortal', label: 'Immortal' },
+  { hash: '#pieces', label: 'Pieces' },
+  { hash: '#sources', label: 'Sources' },
 ];
 
-export default function SiteHeader() {
+export default function SiteHeader({ home = true }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -63,8 +64,12 @@ export default function SiteHeader() {
       <div className="site-header__inner">
         <a
           className="site-header__brand"
-          href="#top"
-          aria-label="The 64 Squares — back to top"
+          href={home ? '#top' : '/'}
+          aria-label={
+            home
+              ? 'The 64 Squares — back to top'
+              : 'The 64 Squares — back to the archive'
+          }
           onClick={() => setOpen(false)}
         >
           <span className="site-header__mark" aria-hidden="true">
@@ -81,14 +86,17 @@ export default function SiteHeader() {
           id="site-menu"
           aria-label="Primary navigation"
         >
-          {LINKS.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
-              {link.label}
-            </a>
-          ))}
+          {LINKS.map((link) => {
+            const href = link.href ?? (home ? link.hash : `/${link.hash}`);
+            return (
+              <a key={href} href={href} onClick={() => setOpen(false)}>
+                {link.label}
+              </a>
+            );
+          })}
           <a
             className="site-header__cta"
-            href="#challenge"
+            href={home ? '#challenge' : '/#challenge'}
             onClick={() => setOpen(false)}
           >
             Challenge me <span aria-hidden="true">↗</span>

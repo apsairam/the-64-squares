@@ -1,9 +1,14 @@
 # The 64 Squares
 
-A source-backed, accessible chess reference with a cinematic opening. The page
-starts on a full-screen monochrome board, teaches Scholar's Mate move by move,
-then opens into the rules, history, Immortal Game analysis, piece guide, phases
-of play, timeline, sources, and FAQ.
+A source-backed, accessible chess reference with a cinematic opening. The home
+page starts on a full-screen monochrome board, teaches Scholar's Mate move by
+move, then opens into the rules, history, Immortal Game analysis, piece guide,
+phases of play, timeline, sources, and FAQ.
+
+A six-page beginner path sits alongside the home page: learn chess, the complete
+rules, how the pieces move, the three special moves, Scholar's Mate, and chess
+notation. Every guide is pre-rendered as its own URL with unique metadata,
+canonical URL, breadcrumbs, FAQ schema, and internal links.
 
 The design stays deliberately black-and-white: typography, the board, the chrome
 piece stills, and the scroll choreography carry the art direction.
@@ -22,6 +27,15 @@ piece stills, and the scroll choreography carry the art direction.
   disputed or legendary material is explicitly marked as legend.
 - **Challenge** — a direct Chess.com challenge card.
 
+## Beginner guide URLs
+
+- `/learn-chess/` — the path overview and first study plan
+- `/chess-rules/` — setup, turns, checkmate, draws, and the rules beginners miss
+- `/how-chess-pieces-move/` — every piece, its value, and the mistakes to avoid
+- `/special-moves/` — castling, en passant, promotion, and check
+- `/scholars-mate/` — the four-move mate, its defences, and an interactive lesson link
+- `/chess-notation/` — squares, piece letters, captures, checkmate, and annotations
+
 ## Stack
 
 - **React 18 + Vite 6** client
@@ -32,8 +46,8 @@ piece stills, and the scroll choreography carry the art direction.
   chess-glyph subset. No Google Fonts request is made at runtime.
 - **WebP** stills and sprite sheets
 
-There is no database. The page is stateless and the content is versioned in
-`client/src/data/chessContent.js`.
+There is no database. The pages are stateless and the content is versioned in
+`client/src/data/chessContent.js` and `client/src/data/guidePages.js`.
 
 ## Run locally
 
@@ -70,8 +84,10 @@ The build runs three stages:
 
 1. Vite builds the client into `client/dist`.
 2. Vite builds the server entry into `client/dist-ssr`.
-3. `client/scripts/prerender.mjs` renders the React tree to HTML, injects it into
-   `#root`, inlines the extracted CSS, and writes `sitemap.xml` and `robots.txt`.
+3. `client/scripts/prerender.mjs` renders the React tree for the home page and
+   all six guide routes, injects each route into `#root`, applies per-page
+   metadata, inlines the extracted CSS, and writes `sitemap.xml` and
+   `robots.txt`.
 
 The browser then hydrates the pre-rendered markup. The page is readable and
 fully styled before JavaScript loads.
@@ -85,8 +101,8 @@ fully styled before JavaScript loads.
 | `npm run dev:server` | Run only the API on port 4000 |
 | `npm run build` | Build, server-render, inline CSS, and generate crawl files |
 | `npm start` | Serve `client/dist` and the API on port 4000 |
-| `npm test` | Run the content, lesson, and SEO/SSG test suites |
-| `npm run check` | Playwright smoke test against the running production server |
+| `npm test` | Run the content, lesson, SEO/SSG, and guide test suites |
+| `npm run check` | Playwright smoke test against the local production server |
 | `npm run preview` | Write desktop, wide, mobile, and small-screen screenshots to `shots/` |
 | `npm run build:pieces` | Re-render the 3D piece sheets and stills |
 
@@ -103,9 +119,9 @@ fully styled before JavaScript loads.
   The article content starts immediately below it. No five-screen scroll trap.
 - **Reduced motion:** the static step-through is used at every width, animations
   are disabled, and the native reduced-motion preference is respected.
-- **No JavaScript:** the pre-rendered lesson, guides, history, FAQ, and sources
-  remain readable; the page falls back safely to content rather than an empty
-  root.
+- **No JavaScript:** the pre-rendered lesson, home content, and all six guide
+  pages remain readable and styled; the pages fall back safely to content rather
+  than an empty root.
 
 ## Accessibility
 
@@ -122,12 +138,16 @@ fully styled before JavaScript loads.
 
 ## SEO and structured data
 
-- Pre-rendered HTML with unique title and a 120–160 character description.
+- Pre-rendered HTML for every route with a unique title and a 120–160 character
+  description.
 - Canonical, Open Graph, Twitter cards, favicon, Apple touch icon, and a
-  generated `og-image.png`.
-- `sitemap.xml`, `robots.txt`, and clean 404 behavior.
-- JSON-LD: `WebSite`, `Article`, `FAQPage`, and `HowTo`.
+  generated `og-image.png` on every page.
+- `sitemap.xml` with the home page and all six guide URLs, `robots.txt`, and
+  clean 404 behavior.
+- JSON-LD: `WebSite`, `Article`, `BreadcrumbList`, `FAQPage`, and `HowTo`.
 - Source links and a visible FAQ that match the structured data.
+- Internal links from the home page, the guide sidebar, the previous/next pager,
+  and the footer.
 
 ## Project layout
 
@@ -140,20 +160,25 @@ client/
       ChessBoard.jsx         # board, pieces, mate state, coordinates
       HistoryScroll.jsx      # pinned desktop scrub + static mobile lesson
       SiteHeader.jsx         # navigation and mobile menu
+      SiteFooter.jsx         # shared footer and guide index
       LearnGuide.jsx         # rules, special moves, notation
       Faq.jsx                # native accessible FAQ
       PieceGuide.jsx         # piece cards, diagrams, portraits
       ModernTimeline.jsx     # modern chess timeline
       Sources.jsx            # source list and further reading
-      StructuredData.jsx     # JSON-LD
+      StructuredData.jsx     # home-page JSON-LD
+      GuideStructuredData.jsx # guide Article/Breadcrumb/FAQ/HowTo JSON-LD
       Reveal.jsx             # reduced-motion-aware reveal
+    pages/
+      GuidePage.jsx          # shared beginner-guide article shell
     assets/fonts/            # self-hosted woff2 files
     assets/pieces/           # generated sheets and stills
     data/
       board.js               # files, glyphs, starting pieces
       scholarsMate.js        # eight lesson positions and labels
-      chessContent.js        # all page copy and source-backed claims
-    App.jsx
+      chessContent.js        # home page copy and source-backed claims
+      guidePages.js          # six guide routes, copy, FAQs, and sources
+    App.jsx                  # home page and guide route switch
     styles.css
 server/
   index.js                   # API, security headers, caching, SPA fallback
@@ -161,6 +186,7 @@ tests/
   content.test.mjs
   lesson.test.mjs
   seo.test.mjs
+  guides.test.mjs            # guide data, SSG, schema, links, sitemap
 scripts/
   check.mjs                  # Playwright smoke test
   preview.mjs                # responsive screenshot generation
@@ -169,12 +195,14 @@ scripts/
 
 ## Verification snapshot
 
-- `npm test`: 19/19 passing.
-- `npm run check`: 35/35 passing.
+- `npm test`: 25/25 passing.
+- `npm run check`: 41/41 passing.
 - Lighthouse desktop: 100 performance, 100 accessibility, 100 best practices,
   100 SEO.
-- Lighthouse mobile: 92–93 performance, 100 accessibility, 100 best practices,
+- Lighthouse mobile home: 96 performance, 100 accessibility, 100 best practices,
   100 SEO.
+- Lighthouse desktop and mobile guides: 100/98 performance, with 100
+  accessibility, best practices, and SEO.
 
 Mobile performance is intentionally measured with the full art direction
 enabled. The remaining opportunity is the desktop-only GSAP/ScrollTrigger code

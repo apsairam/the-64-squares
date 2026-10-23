@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { guidePages } from '../src/data/guidePages.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,54 +24,118 @@ if (!fs.existsSync(ssrEntry)) {
 }
 
 const { render } = await import(pathToFileURL(ssrEntry).href);
-const appHtml = render();
-let html = fs.readFileSync(indexPath, 'utf8');
-
-const absoluteUrl = `${siteUrl}/`;
+let baseHtml = fs.readFileSync(indexPath, 'utf8');
+const lastmod = new Date().toISOString().slice(0, 10);
 const socialImage = `${siteUrl}/og-image.png`;
-const headTags = [
-  `<link rel="canonical" href="${absoluteUrl}" />`,
-  `<meta property="og:url" content="${absoluteUrl}" />`,
-  `<meta property="og:image" content="${socialImage}" />`,
-  `<meta name="twitter:image" content="${socialImage}" />`,
-].join('\n    ');
-html = html.replace('</head>', `    ${headTags}\n  </head>`);
 
-// A single-page prerender does not need a separate render-blocking CSS request.
-// Inline the extracted stylesheet so the pre-rendered hero is styled on the
-// first paint, including when JavaScript is still loading.
-let inlinedCssBytes = 0;
-html = html.replace(/<link[^>]+rel="stylesheet"[^>]*>/i, (tag) => {
-  const href = tag.match(/href="([^"]+\.css)"/);
-  if (!href) return tag;
-  const cssPath = path.join(distDir, href[1].replace(/^\//, ''));
-  if (!fs.existsSync(cssPath)) return tag;
-  const css = fs.readFileSync(cssPath, 'utf8');
-  inlinedCssBytes = Buffer.byteLength(css);
-  return `<style>${css}</style>`;
-});
+const escapeHtml = (value) =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 
-const rootPattern = /<div id="root"><\/div>/;
-if (!rootPattern.test(html)) {
-  throw new Error('Could not find an empty #root in the client build.');
+const absolute = (pathname) => `${siteUrl}${pathname}`;
+
+function replaceTitle(html, title) {
+  return html.replace(
+    /<title>[\s\S]*?<\/title>/i,
+    `<title>${escapeHtml(title)}</title>`
+  );
 }
-html = html.replace(rootPattern, `<div id="root">${appHtml}</div>`);
-fs.writeFileSync(indexPath, html);
 
-const ssrAssets = path.join(ssrDir, 'assets');
-const clientAssets = path.join(distDir, 'assets');
-if (fs.existsSync(ssrAssets)) {
-  fs.mkdirSync(clientAssets, { recursive: true });
-  for (const file of fs.readdirSync(ssrAssets)) {
-    const source = path.join(ssrAssets, file);
-    const target = path.join(clientAssets, file);
-    if (!fs.existsSync(target)) {
-      fs.copyFileSync(source, target);
+function upsertMeta(html, attribute, key, content) {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(
+    `<meta\\s+${attribute}="${escapedKey}"[\\s\\S]*?\\/>`,
+    'i'
+  );
+  const tag = `<meta ${attribute}="${key}" content="${escapeHtml(content)}" />`;
+
+  if (pattern.test(html)) return html.replace(pattern, tag);
+
+  return html.replace('</head>', `    ${tag}\n  </head>`);
+}
+
+function upsertCanonical(html, href) {
+  const tag = `<link rel="canonical" href="${escapeHtml(href)}" />`;
+  const pattern = /<link\s+rel="canonical"[^>]*>/i;
+  if (pattern.test(html)) return html.replace(pattern, tag);
+  return html.replace('</head>', `    ${tag}\n  </head>`);
+}
+
+function pageHtml(page, appHtml) {
+  let html = baseHtml;
+
+  if (page) {
+    const pageUrl = absolute(`/${page.slug}/`);
+    html = replaceTitle(html, page.title);
+    html = upsertMeta(html, 'name', 'description', page.description);
+    html = upsertMeta(html, 'property', 'og:type', 'article');
+    html = upsertMeta(html, 'property', 'og:title', page.title);
+    html = upsertMeta(html, 'property', 'og:description', page.description);
+    html = upsertMeta(html, 'property', 'og:url', pageUrl);
+    html = upsertMeta(html, 'property', 'og:image', socialImage);
+    html = upsertMeta(html, 'property', 'article:published_time', page.published);
+    html = upsertMeta(html, 'property', 'article:modified_time', page.updated);
+    html = upsertMeta(html, 'property', 'article:section', page.navLabel);
+    html = upsertMeta(html, 'name', 'twitter:title', page.title);
+    html = upsertMeta(html, 'name', 'twitter:description', page.description);
+    html = upsertMeta(html, 'name', 'twitter:image', socialImage);
+    html = upsertCanonical(html, pageUrl);
+  } else {
+    const homeUrl = absolute('/');
+    html = upsertMeta(html, 'property', 'og:url', homeUrl);
+    html = upsertMeta(html, 'property', 'og:image', socialImage);
+    html = upsertMeta(html, 'name', 'twitter:image', socialImage);
+    html = upsertCanonical(html, homeUrl);
+  }
+
+  const rootPattern = /<div id="root"><\/div>/;
+  if (!rootPattern.test(html)) {
+    throw new Error('Could not find an empty #root in the client build.');
+  }
+
+  return html.replace(rootPattern, `<div id="root">${appHtml}</div>`);
+}
+
+function writePage(route, page = null) {
+  const appHtml = render(route);
+  const html = pageHtml(page, appHtml);
+  const target =
+    route === '/'
+      ? indexPath
+      : path.join(distDir, route.replace(/^\/|\/$/g, ''), 'index.html');
+
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, html);
+  return appHtml.length;
+}
+
+// Inline the extracted stylesheet once. Every pre-rendered route uses the
+// same generated CSS, so the first paint is styled before JavaScript loads.
+let inlinedCssBytes = 0;
+const stylesheetPattern = /<link[^>]+rel="stylesheet"[^>]*>/i;
+const stylesheetTag = baseHtml.match(stylesheetPattern)?.[0];
+if (stylesheetTag) {
+  const href = stylesheetTag.match(/href="([^"]+\.css)"/);
+  if (href) {
+    const cssPath = path.join(distDir, href[1].replace(/^\//, ''));
+    if (fs.existsSync(cssPath)) {
+      const css = fs.readFileSync(cssPath, 'utf8');
+      inlinedCssBytes = Buffer.byteLength(css);
+      baseHtml = baseHtml.replace(stylesheetTag, `<style>${css}</style>`);
     }
   }
 }
 
-const lastmod = new Date().toISOString().slice(0, 10);
+const homeBytes = writePage('/');
+let totalBytes = homeBytes;
+
+for (const page of guidePages) {
+  totalBytes += writePage(`/${page.slug}/`, page);
+}
+
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -79,6 +144,16 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
+${guidePages
+  .map(
+    (page) => `  <url>
+    <loc>${siteUrl}/${page.slug}/</loc>
+    <lastmod>${page.updated}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>${page.slug === 'learn-chess' ? '0.9' : '0.8'}</priority>
+  </url>`
+  )
+  .join('\n')}
 </urlset>
 `;
 fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemap);
@@ -88,9 +163,11 @@ fs.writeFileSync(
 );
 
 console.log(
-  `Prerendered ${(appHtml.length / 1024).toFixed(1)} KB of HTML into dist/index.html`
+  `Prerendered ${(totalBytes / 1024).toFixed(1)} KB of HTML across ${
+    guidePages.length + 1
+  } pages`
 );
 if (inlinedCssBytes) {
-  console.log(`Inlined ${(inlinedCssBytes / 1024).toFixed(1)} KB of critical CSS`);
+  console.log(`Inlined ${(inlinedCssBytes / 1024).toFixed(1)} KB of CSS per page`);
 }
 console.log(`Sitemap and robots.txt generated for ${siteUrl}`);
