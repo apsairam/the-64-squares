@@ -61,9 +61,6 @@ export default function PieceGuide({ pieces }) {
     const triggers = [];
 
     grid.querySelectorAll('.piece-card').forEach((card) => {
-      const diagram = card.querySelector(
-        '.piece-card__media .diagram__board'
-      );
       const portrait = card.querySelector('.piece-card__piece');
 
       triggers.push(
@@ -72,10 +69,6 @@ export default function PieceGuide({ pieces }) {
           start: 'top bottom',
           end: 'bottom top',
           onUpdate: (self) => {
-            if (diagram) {
-              const offset = (self.progress - 0.5) * 58;
-              diagram.style.transform = `translate3d(0, ${offset.toFixed(2)}px, 0)`;
-            }
             if (portrait) {
               const drift = (self.progress - 0.5) * -102;
               portrait.style.transform = `translate3d(0, ${drift.toFixed(2)}px, 0)`;

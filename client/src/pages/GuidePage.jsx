@@ -1,3 +1,6 @@
+import BoardParallax from '../components/BoardParallax';
+import GuideDiagrams from '../components/GuideDiagrams';
+import GuidePieceGallery from '../components/GuidePieceGallery';
 import GuideStructuredData from '../components/GuideStructuredData';
 import SiteFooter from '../components/SiteFooter';
 import SiteHeader from '../components/SiteHeader';
@@ -60,6 +63,14 @@ function GuideSection({ section }) {
       {section.paragraphs?.map((paragraph) => (
         <p key={paragraph}>{paragraph}</p>
       ))}
+
+      {section.diagrams?.length > 0 && (
+        <GuideDiagrams diagrams={section.diagrams} />
+      )}
+
+      {section.pieceGallery?.length > 0 && (
+        <GuidePieceGallery pieces={section.pieceGallery} />
+      )}
 
       {section.list && (
         <ul className="guide-list">
@@ -307,6 +318,7 @@ export default function GuidePage({ page }) {
         </div>
       </main>
 
+      <BoardParallax />
       <SiteFooter variant="guide" />
       <GuideStructuredData page={page} />
     </>

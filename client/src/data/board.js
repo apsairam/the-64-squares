@@ -60,6 +60,12 @@ export const INITIAL_PIECES = [
   })),
 ];
 
+export const STARTING_POSITION = INITIAL_PIECES.map((piece) => ({
+  square: `${FILES[piece.file]}${8 - piece.y}`,
+  side: piece.side,
+  type: piece.type,
+}));
+
 export function squareName(file, y) {
   return `${FILES[file]}${8 - y}`;
 }

@@ -1,3 +1,5 @@
+import { STARTING_POSITION } from './board.js';
+
 const FIDE_SOURCE = {
   title: 'FIDE Laws of Chess (2023)',
   publisher: 'FIDE',
@@ -6,6 +8,7 @@ const FIDE_SOURCE = {
 };
 
 const REVIEWED = 'October 2026';
+const p = (square, side, type) => ({ square, side, type });
 
 export const guidePages = [
   {
@@ -21,7 +24,7 @@ export const guidePages = [
       'Chess looks like a language you missed the first lesson of. It is not. Start with the board, the pieces, and one clear goal — then build outward from there.',
     readingTime: '9 min read',
     published: '2026-10-23',
-    updated: '2026-10-23',
+    updated: '2026-10-24',
     reviewed: REVIEWED,
     keywords: ['learn chess', 'chess for beginners', 'how to play chess'],
     keyFacts: [
@@ -55,13 +58,55 @@ export const guidePages = [
           'Each piece moves by its own geometry. Pawns step forward and capture diagonally; knights make an L-shape and jump; bishops travel on diagonals; rooks travel on ranks and files; queens combine rook and bishop power; kings move one square in any direction but may not step into check.',
           'You do not need to memorise every opening to begin. You do need to know how each piece moves, what it is roughly worth, and which pieces are still on the board. The full movement guide is the next stop on this path.',
         ],
-        list: [
-          'Pawn — one square forward, two on its first move, captures diagonally.',
-          'Knight — two squares one way and one square across; the only jumping piece.',
-          'Bishop — any distance on a diagonal; it never changes square colour.',
-          'Rook — any distance on a rank or file; it powers the endgame.',
-          'Queen — any distance on a rank, file, or diagonal.',
-          'King — one square in any direction; the piece the whole game protects.',
+        pieceGallery: [
+          {
+            id: 'pawn',
+            name: 'Pawn',
+            label: 'Infantry',
+            value: '1',
+            movement:
+              'One square forward; two on its first move. Captures one square diagonally forward.',
+          },
+          {
+            id: 'knight',
+            name: 'Knight',
+            label: 'Cavalry',
+            value: '3',
+            movement:
+              'Two squares one way, then one square across. The only piece that jumps.',
+          },
+          {
+            id: 'bishop',
+            name: 'Bishop',
+            label: 'Sniper',
+            value: '3',
+            movement:
+              'Any distance on a diagonal. It never changes the colour of its square.',
+          },
+          {
+            id: 'rook',
+            name: 'Rook',
+            label: 'Siege tower',
+            value: '5',
+            movement:
+              'Any distance on a rank or file. It becomes strongest in the endgame.',
+          },
+          {
+            id: 'queen',
+            name: 'Queen',
+            label: 'Imperator',
+            value: '9',
+            movement:
+              'Any distance on a rank, file, or diagonal. The most powerful piece.',
+          },
+          {
+            id: 'king',
+            name: 'King',
+            label: 'Sovereign',
+            value: '∞',
+            movement:
+              'One square in any direction. It may never move into check.',
+          },
         ],
         links: [
           {
@@ -142,7 +187,7 @@ export const guidePages = [
       'The whole game rests on a small set of rules. Learn them once, in the right order, and the board stops looking like a secret code.',
     readingTime: '8 min read',
     published: '2026-10-23',
-    updated: '2026-10-23',
+    updated: '2026-10-24',
     reviewed: REVIEWED,
     keywords: ['chess rules', 'how to play chess', 'chess rules for beginners'],
     keyFacts: [
@@ -157,6 +202,15 @@ export const guidePages = [
         paragraphs: [
           'Place the board with a light square in each player’s near-right corner. White’s two rooks sit on a1 and h1; the knights, bishops, queen, and king fill the back rank in that order. The white queen starts on d1, the white king on e1. Black mirrors this on rank 8.',
           'The second rank holds eight white pawns; the seventh rank holds eight black pawns. White moves first. In a standard game, White is the player with the lighter pieces, regardless of who is sitting where.',
+        ],
+        diagrams: [
+          {
+            label: 'The starting position',
+            caption:
+              'White on ranks 1 and 2, Black on ranks 7 and 8. The white queen on d1 stands on a light square; the black queen on d8 stands on a dark one. The kings face each other on e1 and e8.',
+            pieces: STARTING_POSITION,
+            coordinates: true,
+          },
         ],
       },
       {
@@ -175,6 +229,46 @@ export const guidePages = [
         paragraphs: [
           'Check means the king is under attack. Checkmate means the king is in check and no legal move can remove the attack. The game ends immediately; the king is never captured. A player who cannot move but whose king is not in check is stalemated, which is a draw.',
           'A common beginner error is to announce “check” with a move that actually leaves the king safe, or to miss that a blocking piece is itself pinned. Before every move, ask three questions: is my king safe, is my opponent’s king safe, and what is my opponent threatening?',
+        ],
+        diagrams: [
+          {
+            label: 'Check: the rook attacks the king',
+            caption:
+              'The white rook on e1 checks the black king on e8 along the open e-file. Black is not mated: the king can step to d8, f8, d7, or f7.',
+            pieces: [
+              p('a1', 'w', 'king'),
+              p('e1', 'w', 'rook'),
+              p('e8', 'b', 'king'),
+            ],
+            marks: [{ square: 'e8', type: 'check' }],
+            arrows: [{ from: 'e1', to: 'e8' }],
+          },
+          {
+            label: 'Checkmate: the back-rank mate',
+            caption:
+              'The rook on e8 checks the king on g8. The pawns on f7, g7, and h7 block every escape, while the rook covers f8 and h8. Checkmate.',
+            pieces: [
+              p('a1', 'w', 'king'),
+              p('e8', 'w', 'rook'),
+              p('f7', 'b', 'pawn'),
+              p('g7', 'b', 'pawn'),
+              p('h7', 'b', 'pawn'),
+              p('g8', 'b', 'king'),
+            ],
+            marks: [{ square: 'g8', type: 'mate' }],
+            arrows: [{ from: 'e8', to: 'g8' }],
+          },
+          {
+            label: 'Stalemate: no legal move, no check',
+            caption:
+              'Black is not in check, but the queen on b6 covers a7, b7, and b8, and the white king on c7 covers b7 and b8. Black has no legal move. Stalemate — a draw.',
+            pieces: [
+              p('a8', 'b', 'king'),
+              p('b6', 'w', 'queen'),
+              p('c7', 'w', 'king'),
+            ],
+            marks: [{ square: 'a8', type: 'stalemate' }],
+          },
         ],
       },
       {
@@ -220,6 +314,27 @@ export const guidePages = [
         paragraphs: [
           'Not every game ends in checkmate. A game is drawn by stalemate, agreement between the players, threefold repetition of the same position, the fifty-move rule, or a dead position where neither side can possibly deliver mate. Insufficient material is the usual example of a dead position: king versus king, or king and bishop versus king.',
           'In tournament chess, a player may also lose on time if the opponent has enough material to mate. Online platforms handle this automatically. Resignation is a voluntary loss, not a rule about the position.',
+        ],
+        diagrams: [
+          {
+            label: 'Draw: king versus king',
+            caption:
+              'With only the two kings left, neither side can deliver checkmate. The position is dead and the game is drawn.',
+            pieces: [
+              p('e1', 'w', 'king'),
+              p('e8', 'b', 'king'),
+            ],
+          },
+          {
+            label: 'Draw: king and bishop versus king',
+            caption:
+              'The bishop controls only one colour, and the king cannot cover every escape square. Checkmate cannot be constructed, so the game is drawn.',
+            pieces: [
+              p('e1', 'w', 'king'),
+              p('c1', 'w', 'bishop'),
+              p('e8', 'b', 'king'),
+            ],
+          },
         ],
       },
       {
@@ -405,7 +520,7 @@ export const guidePages = [
       'Castling, en passant, and promotion look like exceptions. They are ordinary rules with precise conditions — and once you know those conditions, they stop being surprising.',
     readingTime: '7 min read',
     published: '2026-10-23',
-    updated: '2026-10-23',
+    updated: '2026-10-24',
     reviewed: REVIEWED,
     keywords: ['castling', 'en passant', 'pawn promotion', 'chess special moves'],
     keyFacts: [
@@ -420,6 +535,56 @@ export const guidePages = [
         paragraphs: [
           'Castling is the only move that moves two pieces at once. The king moves two squares toward a rook, and the rook jumps to the square the king crossed. Kingside castling is written O-O; queenside castling is O-O-O.',
           'The conditions are strict. The king and the chosen rook must not have moved earlier in the game. The squares between them must be empty. The king may not be in check, pass through a square attacked by the enemy, or finish on an attacked square. The rook may be attacked; only the king’s path matters.',
+        ],
+        diagrams: [
+          {
+            label: 'Kingside castling: before the move',
+            caption:
+              'Assuming the king and h1 rook have not moved, f1 and g1 are empty and safe. After O-O the king stands on g1 and the rook on f1.',
+            pieces: [
+              p('e1', 'w', 'king'),
+              p('h1', 'w', 'rook'),
+              p('a2', 'w', 'pawn'),
+              p('b2', 'w', 'pawn'),
+              p('c2', 'w', 'pawn'),
+              p('d2', 'w', 'pawn'),
+              p('e2', 'w', 'pawn'),
+              p('f2', 'w', 'pawn'),
+              p('g2', 'w', 'pawn'),
+              p('h2', 'w', 'pawn'),
+              p('a8', 'b', 'rook'),
+              p('e8', 'b', 'king'),
+            ],
+            highlight: ['e1', 'f1', 'g1', 'h1'],
+            arrows: [
+              { from: 'e1', to: 'g1' },
+              { from: 'h1', to: 'f1' },
+            ],
+          },
+          {
+            label: 'Queenside castling: before the move',
+            caption:
+              'With b1, c1, and d1 empty, the king goes from e1 to c1 and the rook from a1 to d1. After O-O-O the king stands on c1 and the rook on d1.',
+            pieces: [
+              p('a1', 'w', 'rook'),
+              p('e1', 'w', 'king'),
+              p('a2', 'w', 'pawn'),
+              p('b2', 'w', 'pawn'),
+              p('c2', 'w', 'pawn'),
+              p('d2', 'w', 'pawn'),
+              p('e2', 'w', 'pawn'),
+              p('f2', 'w', 'pawn'),
+              p('g2', 'w', 'pawn'),
+              p('h2', 'w', 'pawn'),
+              p('e8', 'b', 'king'),
+              p('h8', 'b', 'rook'),
+            ],
+            highlight: ['a1', 'b1', 'c1', 'd1', 'e1'],
+            arrows: [
+              { from: 'e1', to: 'c1' },
+              { from: 'a1', to: 'd1' },
+            ],
+          },
         ],
         list: [
           'Kingside: the king goes from e1 to g1; the rook goes from h1 to f1.',
@@ -437,6 +602,21 @@ export const guidePages = [
           'En passant is a pawn capture that happens as if an enemy pawn had advanced only one square. It is available only when an enemy pawn moves two squares from its starting rank and lands beside your pawn on the same rank.',
           'On your very next move, your pawn may capture diagonally onto the square the enemy pawn skipped. The captured pawn is removed. If you do not take it immediately, the right disappears. You cannot save it for a later turn.',
         ],
+        diagrams: [
+          {
+            label: 'En passant: White captures on d6',
+            caption:
+              'Black has just played ...d7–d5. The white pawn on e5 may capture on d6 and remove the black pawn on d5 — but only on this move.',
+            pieces: [
+              p('e1', 'w', 'king'),
+              p('e5', 'w', 'pawn'),
+              p('d5', 'b', 'pawn'),
+              p('e8', 'b', 'king'),
+            ],
+            highlight: ['d5', 'd6', 'e5'],
+            arrows: [{ from: 'e5', to: 'd6' }],
+          },
+        ],
         note:
           'The notation is sometimes written “e.p.” or shown with the capture square. In practice, most scores simply record the capture, such as 3.exd6, and the context makes the en passant clear.',
       },
@@ -446,6 +626,21 @@ export const guidePages = [
         paragraphs: [
           'When a pawn reaches the far rank, it must be promoted to a queen, rook, bishop, or knight. The pawn does not stay a pawn, and promotion is part of the move. A player may have more than one queen; there is no limit on promoted pieces beyond the board.',
           'A queen is the usual choice because it is the most powerful piece. A knight is occasionally better because it moves differently and can create an immediate fork. A rook or bishop is rarely the best choice, but both are legal. You may not promote to a king.',
+        ],
+        diagrams: [
+          {
+            label: 'Promotion: the pawn on b7 reaches b8',
+            caption:
+              'The white pawn is one step from the far rank. White must promote it to a queen, rook, bishop, or knight; the choice is part of the move.',
+            pieces: [
+              p('e1', 'w', 'king'),
+              p('b7', 'w', 'pawn'),
+              p('e8', 'b', 'king'),
+              p('h8', 'b', 'rook'),
+            ],
+            highlight: ['b7', 'b8'],
+            arrows: [{ from: 'b7', to: 'b8' }],
+          },
         ],
         list: [
           'Promotion happens on the eighth rank for White and the first rank for Black.',

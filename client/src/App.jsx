@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import BoardParallax from './components/BoardParallax';
 import Faq from './components/Faq';
 import HistoryScroll from './components/HistoryScroll';
 import LearnGuide from './components/LearnGuide';
@@ -9,6 +10,7 @@ import Reveal from './components/Reveal';
 import SectionHead from './components/SectionHead';
 import SiteFooter from './components/SiteFooter';
 import SiteHeader from './components/SiteHeader';
+import SiteLoader from './components/SiteLoader';
 import Sources from './components/Sources';
 import StructuredData from './components/StructuredData';
 import GuidePage from './pages/GuidePage';
@@ -259,6 +261,8 @@ function HomePage() {
 
   return (
     <>
+      <SiteLoader />
+      <BoardParallax />
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>

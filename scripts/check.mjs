@@ -23,6 +23,12 @@ function samePageLinksResolve(page) {
   );
 }
 
+async function waitForLoader(page) {
+  const loader = page.locator('[data-site-loader]');
+  if ((await loader.count()) === 0) return;
+  await loader.waitFor({ state: 'detached', timeout: 15000 });
+}
+
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 
 try {
@@ -36,7 +42,32 @@ try {
   });
   page.on('pageerror', (error) => errors.push(`page: ${error.message}`));
 
-  const response = await page.goto(BASE, { waitUntil: 'networkidle' });
+  const response = await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  check(
+    'the loader covers the home page while assets warm',
+    await page.locator('[data-site-loader]').isVisible()
+  );
+  let litPath = true;
+  try {
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('.site-loader__tile.is-lit').length >= 2,
+      { timeout: 6000 }
+    );
+  } catch {
+    litPath = false;
+  }
+  check('the loader lights the knight path', litPath);
+  await waitForLoader(page);
+  check(
+    'the loader releases the page after a full cycle',
+    await page.evaluate(
+      () =>
+        !document.querySelector('[data-site-loader]') &&
+        !document.documentElement.classList.contains('is-preloading') &&
+        document.querySelector('main')?.inert === false
+    )
+  );
   await page.waitForTimeout(1400);
 
   check('desktop responds 200', response?.status() === 200, response?.status());
@@ -88,6 +119,14 @@ try {
   const openFaq = await page.locator('#faq details[open]').count();
   check('FAQ opens', openFaq >= 1, openFaq);
 
+  await page.goto(`${BASE}/learn-chess/`, { waitUntil: 'domcontentloaded' });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(600);
+  check(
+    'the loader only runs once per session',
+    (await page.locator('[data-site-loader]').count()) === 0
+  );
+
   await page.screenshot({ path: 'shots/check-desktop.png' });
   await context.close();
 
@@ -103,7 +142,8 @@ try {
     if (message.type() === 'error') mobileErrors.push(`console: ${message.text()}`);
   });
   mobile.on('pageerror', (error) => mobileErrors.push(`page: ${error.message}`));
-  await mobile.goto(BASE, { waitUntil: 'networkidle' });
+  await mobile.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await waitForLoader(mobile);
   await mobile.waitForTimeout(1200);
 
   check('mobile uses static lesson', /lesson--static/.test(await mobile.locator('.lesson').getAttribute('class')));
@@ -157,7 +197,8 @@ try {
     reducedMotion: 'reduce',
   });
   const reduced = await reducedContext.newPage();
-  await reduced.goto(BASE, { waitUntil: 'networkidle' });
+  await reduced.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await waitForLoader(reduced);
   await reduced.waitForTimeout(900);
   check('reduced motion uses static lesson', /lesson--static/.test(await reduced.locator('.lesson').getAttribute('class')));
   check('reduced motion has no pin spacer', await reduced.evaluate(() => document.querySelector('.lesson').getBoundingClientRect().height < window.innerHeight * 2));

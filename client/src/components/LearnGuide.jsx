@@ -1,13 +1,7 @@
 import BoardDiagram from './BoardDiagram';
 import Reveal from './Reveal';
 import SectionHead from './SectionHead';
-import { FILES, INITIAL_PIECES } from '../data/board';
-
-const STARTING_PIECES = INITIAL_PIECES.map((piece) => ({
-  square: `${FILES[piece.file]}${8 - piece.y}`,
-  side: piece.side,
-  type: piece.type,
-}));
+import { STARTING_POSITION } from '../data/board';
 
 export default function LearnGuide({ learn }) {
   return (
@@ -23,7 +17,7 @@ export default function LearnGuide({ learn }) {
         <div className="learn__grid">
           <div className="learn__board">
             <BoardDiagram
-              pieces={STARTING_PIECES}
+              pieces={STARTING_POSITION}
               coordinates
               label="The starting position: White on ranks one and two, Black on ranks seven and eight"
             />

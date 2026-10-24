@@ -12,7 +12,7 @@
     "check": "node scripts/check.mjs",
     "preview": "node scripts/preview.mjs",
     "start": "npm --prefix server start",
-    "test": "node --test tests/content.test.mjs tests/lesson.test.mjs tests/seo.test.mjs tests/guides.test.mjs"
+    "test": "node --test tests/content.test.mjs tests/lesson.test.mjs tests/seo.test.mjs tests/guides.test.mjs tests/visuals.test.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

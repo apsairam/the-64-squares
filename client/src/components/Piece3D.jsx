@@ -1,35 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import pawnSheet from '../assets/pieces/pawn.webp';
-import knightSheet from '../assets/pieces/knight.webp';
-import bishopSheet from '../assets/pieces/bishop.webp';
-import rookSheet from '../assets/pieces/rook.webp';
-import queenSheet from '../assets/pieces/queen.webp';
-import kingSheet from '../assets/pieces/king.webp';
-import pawnStill from '../assets/pieces/set-pawn.webp';
-import knightStill from '../assets/pieces/set-knight.webp';
-import bishopStill from '../assets/pieces/set-bishop.webp';
-import rookStill from '../assets/pieces/set-rook.webp';
-import queenStill from '../assets/pieces/set-queen.webp';
-import kingStill from '../assets/pieces/set-king.webp';
-
-const SHEETS = {
-  pawn: pawnSheet,
-  knight: knightSheet,
-  bishop: bishopSheet,
-  rook: rookSheet,
-  queen: queenSheet,
-  king: kingSheet,
-};
-
-const STILLS = {
-  pawn: pawnStill,
-  knight: knightStill,
-  bishop: bishopStill,
-  rook: rookStill,
-  queen: queenStill,
-  king: kingStill,
-};
+import {
+  PIECE_STILLS,
+  sheetEntry,
+  whenEntryReady,
+} from '../lib/pieceAssets';
 
 const FRAMES = 72;
 const COLS = 6;
@@ -37,56 +12,11 @@ const CELL_W = 420;
 const CELL_H = 525;
 const SCROLL_PX_PER_FRAME = 12;
 
-const sheetCache = new Map();
-
-function sheetFor(piece) {
-  if (sheetCache.has(piece)) return sheetCache.get(piece);
-
-  const entry = {
-    image: new Image(),
-    ready: false,
-    failed: false,
-    waiters: new Set(),
-  };
-  entry.image.decoding = 'async';
-  entry.image.onload = () => {
-    entry.ready = true;
-    entry.waiters.forEach((waiter) => waiter());
-    entry.waiters.clear();
-  };
-  entry.image.onerror = () => {
-    entry.failed = true;
-    entry.waiters.clear();
-  };
-  entry.image.src = SHEETS[piece] ?? SHEETS.queen;
-  sheetCache.set(piece, entry);
-  return entry;
-}
-
-function whenSheetReady(piece, callback) {
-  const entry = sheetFor(piece);
-  if (entry.ready) {
-    callback();
-    return () => {};
-  }
-  if (entry.failed) return () => {};
-
-  let active = true;
-  const waiter = () => {
-    if (active) callback();
-  };
-  entry.waiters.add(waiter);
-  return () => {
-    active = false;
-    entry.waiters.delete(waiter);
-  };
-}
-
 export function PieceStill({ piece = 'queen', className = '' }) {
   return (
     <span className={`piece3d piece3d--still ${className}`.trim()}>
       <img
-        src={STILLS[piece] ?? STILLS.queen}
+        src={PIECE_STILLS[piece] ?? PIECE_STILLS.queen}
         alt=""
         loading="lazy"
         decoding="async"
@@ -175,9 +105,9 @@ export default function Piece3D({
     };
 
     const ensureReady = () => {
-      if (!entry) entry = sheetFor(piece);
+      if (!entry) entry = sheetEntry(piece);
       if (readyCleanup) return;
-      readyCleanup = whenSheetReady(piece, () => {
+      readyCleanup = whenEntryReady(entry, () => {
         if (onScreen) draw(reducedMotion ? 0 : framePosition, true);
       });
     };
